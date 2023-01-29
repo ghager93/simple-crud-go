@@ -22,6 +22,6 @@ func main() {
 	db.AutoMigrate()
 
 	e := echo.New()
-	e.GET("/hello", hello)
+	e.GET("/api/helloworld", hello)
 	e.Logger.Fatal(e.Start(":1323"))
 }
