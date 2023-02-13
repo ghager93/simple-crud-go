@@ -7,6 +7,8 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/ghager93/simple-crud-go/api"
 )
 
 func Hello(c echo.Context) error {
@@ -23,5 +25,6 @@ func main() {
 
 	e := echo.New()
 	e.GET("/api/helloworld", Hello)
+	e.POST("/api/simple", api.Create)
 	e.Logger.Fatal(e.Start(":1323"))
 }
