@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func hello(c echo.Context) error {
+func Hello(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello World!")
 }
 
@@ -22,6 +22,6 @@ func main() {
 	db.AutoMigrate()
 
 	e := echo.New()
-	e.GET("/api/helloworld", hello)
+	e.GET("/api/helloworld", Hello)
 	e.Logger.Fatal(e.Start(":1323"))
 }
