@@ -5,10 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
-	"github.com/ghager93/simple-crud-go/api"
+	"simple-crud/go/api"
+	"simple-crud/go/db"
 )
 
 func Hello(c echo.Context) error {
@@ -16,12 +14,7 @@ func Hello(c echo.Context) error {
 }
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
-	if err != nil {
-		panic("Failed to connect to database.")
-	}
-
-	db.AutoMigrate()
+	db.Init()
 
 	e := echo.New()
 	e.GET("/api/helloworld", Hello)
