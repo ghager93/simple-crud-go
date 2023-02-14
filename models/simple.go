@@ -6,6 +6,6 @@ import (
 
 type Simple struct {
 	gorm.Model
-	Name string
-	Number int
+	Name string `json:"name"`
+	Number int `json:"number"`	
 }
