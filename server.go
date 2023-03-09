@@ -14,7 +14,7 @@ func Hello(c echo.Context) error {
 }
 
 func main() {
-	db.Init()
+	db.Init("app.db")
 
 	e := echo.New()
 	e.GET("/api/helloworld", Hello)
