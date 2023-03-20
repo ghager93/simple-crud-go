@@ -26,3 +26,15 @@ func Create(c echo.Context) error {
 
 	return c.String(http.StatusCreated, "Record created")
 }
+
+func GetAll(c echo.Context) error {
+	var simples []models.Simple
+
+	db := db.DbManager()
+	
+	if err := db.Find(&simples).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Error accessing Database.")
+	}
+	
+	return c.JSON(http.StatusOK, &simples)
+}
