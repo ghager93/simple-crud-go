@@ -244,3 +244,97 @@ func TestGetAllThreeEntries(t *testing.T) {
 		assert.Equal(t, testBody["number"], simples[i].Number)
 	}
 }
+
+func TestGetReturns200(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	testBody := map[string]interface{}{
+		"name": "john",
+		"number": 1234,
+	} 
+	testBodyBytes, _ := json.Marshal(testBody)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	assert.NoError(t, Create(c))
+
+	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	
+	c.SetParamNames("id")
+	c.SetParamValues("1")
+
+	assert.NoError(t, Get(c))
+	assert.Equal(t, http.StatusOK, rec.Code)	
+}
+
+func TestInvalidGetReturns404(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	testBody := map[string]interface{}{
+		"name": "john",
+		"number": 1234,
+	} 
+	testBodyBytes, _ := json.Marshal(testBody)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	assert.NoError(t, Create(c))
+
+	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	
+	c.SetParamNames("id")
+	c.SetParamValues("2")
+
+	assert.NoError(t, Get(c))
+	assert.Equal(t, http.StatusBadRequest, rec.Code)	
+}
+
+func TestGetByIDReturnsEntry(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	testBody := map[string]interface{}{
+		"name": "john",
+		"number": 1234,
+	} 
+	testBodyBytes, _ := json.Marshal(testBody)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	assert.NoError(t, Create(c))
+
+	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	
+	c.SetParamNames("id")
+	c.SetParamValues("1")
+
+	assert.NoError(t, Get(c))
+
+	stringResult := rec.Body.String()
+
+	var simple models.Simple
+	assert.NoError(t, json.Unmarshal([]byte(stringResult), &simple))
+
+	assert.Equal(t, testBody["name"], simple.Name)
+	assert.Equal(t, testBody["number"], simple.Number)
+}

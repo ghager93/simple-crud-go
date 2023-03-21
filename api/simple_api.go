@@ -38,3 +38,15 @@ func GetAll(c echo.Context) error {
 	
 	return c.JSON(http.StatusOK, &simples)
 }
+
+func Get(c echo.Context) error {
+	var simple models.Simple
+
+	db := db.DbManager()
+
+	if err := db.First(&simple, c.Param("id")).Error; err != nil {
+		return c.String(http.StatusBadRequest, "Invalid ID.")
+	}
+
+	return c.JSON(http.StatusOK, &simple)
+}
