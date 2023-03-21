@@ -18,6 +18,7 @@ func main() {
 
 	e := echo.New()
 	e.GET("/api/helloworld", Hello)
+	e.GET("/api/simple", api.GetAll)
 	e.POST("/api/simple", api.Create)
 	e.Logger.Fatal(e.Start(":1323"))
 }
