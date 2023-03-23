@@ -22,5 +22,6 @@ func main() {
 	e.GET("/api/simple/:id", api.Get)
 	e.POST("/api/simple", api.Create)
 	e.DELETE("/api/simple/:id", api.Delete)
+	e.PATCH("/api/simple/:id", api.Update)
 	e.Logger.Fatal(e.Start(":1323"))
 }

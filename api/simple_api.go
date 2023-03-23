@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strconv"
+
 	"net/http"
 	"simple-crud/go/db"
 	"simple-crud/go/models"
@@ -46,7 +48,7 @@ func Get(c echo.Context) error {
 	db := db.DbManager()
 
 	if err := db.First(&simple, c.Param("id")).Error; err != nil {
-		return c.String(http.StatusBadRequest, "Invalid ID.")
+		return c.String(http.StatusNotFound, "Entry not found.")
 	}
 
 	return c.JSON(http.StatusOK, &simple)
@@ -62,12 +64,27 @@ func Delete(c echo.Context) error {
 	}
 
 	if simple.ID == 0 {
-		return c.String(http.StatusBadRequest, "Invalid ID.")
+		return c.String(http.StatusNotFound, "Entry not found.")
 	}
 
 	return c.JSON(http.StatusOK, &simple)
 }
 
 func Update(c echo.Context) error {
-	return nil
+	var simple models.Simple
+	
+	db := db.DbManager()
+	if err := db.First(&simple, c.Param("id")).Error; err != nil {
+		return c.String(http.StatusNotFound, "Entry not found.")
+	}
+
+	if err := c.Bind(&simple); err != nil {
+		return c.String(http.StatusBadRequest, "Bad request.")
+	}
+	intID, _ := strconv.Atoi(c.Param("id"))
+	simple.ID = uint(intID)
+
+	db.Model(&simple).Updates(&simple)
+
+	return c.String(http.StatusOK, "Record Updated.")
 }

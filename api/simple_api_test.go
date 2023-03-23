@@ -277,7 +277,7 @@ func TestInvalidGetReturns404(t *testing.T) {
 	rec, err := getSimple("2")
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)	
+	assert.Equal(t, http.StatusNotFound, rec.Code)	
 }
 
 func TestGetByIDReturnsEntry(t *testing.T) {
@@ -324,7 +324,7 @@ func TestInvalidDeleteReturns404(t *testing.T) {
 	rec, err := deleteSimple("1")
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, http.StatusNotFound, rec.Code)
 }
 
 func TestDeleteRemovesEntry(t *testing.T) {
@@ -359,7 +359,7 @@ func TestDeleteRemovesEntry(t *testing.T) {
 	rec, err = getSimple("2")
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, http.StatusNotFound, rec.Code)
 
 	rec, err = getSimple("3")
 
@@ -404,7 +404,7 @@ func TestInvalidUpdateReturns404(t *testing.T) {
 	rec, err := updateSimple("2", updatePayload)
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, http.StatusNotFound, rec.Code)
 }
 
 func TestUpdateUpdatesName(t *testing.T) {
