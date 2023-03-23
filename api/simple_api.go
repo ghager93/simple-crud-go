@@ -50,3 +50,7 @@ func Get(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &simple)
 }
+
+func Delete(c echo.Context) error {
+	return nil
+}

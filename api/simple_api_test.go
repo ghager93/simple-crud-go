@@ -22,102 +22,125 @@ func setupTest(t *testing.T) func() {
 	}
 }
 
+func createPayload(name string, number int) map[string]interface{} {
+	return map[string]interface{}{
+		"name": name,
+		"number": number,
+	}
+}
+
+func postSimple(payload map[string]interface{}) (*httptest.ResponseRecorder, error) {
+	payloadBytes, _ := json.Marshal(payload)	
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(payloadBytes))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := Create(c)
+
+	return rec, err
+}
+
+func getAllSimple() (*httptest.ResponseRecorder, error) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/simple", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := GetAll(c)
+
+	return rec, err
+}
+
+func getSimple(id string) (*httptest.ResponseRecorder, error) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/simple/" + id, nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("id")
+	c.SetParamValues(id)
+
+	err := Get(c)
+
+	return rec, err	
+}
+
+func deleteSimple(id string) (*httptest.ResponseRecorder, error) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodDelete, "/api/simple/" + id, nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("id")
+	c.SetParamValues(id)
+
+	err := Delete(c)
+
+	return rec, err
+}
+
 func TestCreateReturns(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	payload := createPayload("", 0)
+	rec, err := postSimple(payload)
 
-	if assert.NoError(t, Create(c)) {
-		assert.NotEmpty(t, rec.Body.String())
-	}
+	assert.NoError(t, err)
+	assert.NotEmpty(t, rec.Body.String())
 }
 
 func TestCreateValidRequestReturns201(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	payload := createPayload("john", 1234)
+	rec, err := postSimple(payload)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	if assert.NoError(t, Create(c)) {
-		assert.Equal(t, http.StatusCreated, rec.Code)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
 }
 
 func TestCreateSavesToDB(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	assert.NoError(t, Create(c))
+	payload := createPayload("john", 1234)
+	_, err := postSimple(payload)
+	assert.NoError(t, err)
 	
 	var simple models.Simple
 	db.DbManager().First(&simple)
 	
-	assert.Equal(t, testBody["name"], simple.Name)
-	assert.Equal(t, testBody["number"], simple.Number)
+	assert.Equal(t, payload["name"], simple.Name)
+	assert.Equal(t, payload["number"], simple.Number)
 }
 
 func TestCreateInvalidRequestReturns400(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
+	payload := map[string]interface{}{
 		"name": "john",
 	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	
+	rec, err := postSimple(payload)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	if assert.NoError(t, Create(c)) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-	}	
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
 func TestCreateInvalidRequestNotSavedToDB(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
+	payload := map[string]interface{}{
 		"name": "john",
 	} 
-	testBodyBytes, _ := json.Marshal(testBody)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	assert.NoError(t, Create(c))
+	
+	_, err := postSimple(payload)
+	assert.NoError(t, err)
 	
 	var simple models.Simple
 	result := db.DbManager().First(&simple)
@@ -128,12 +151,9 @@ func TestGetAllReturns200(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/simple", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	rec, err := getAllSimple()
 
-	assert.NoError(t, GetAll(c))
+	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
 
@@ -141,12 +161,9 @@ func TestGetAllReturnsEmptyList(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/simple", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	rec, err := getAllSimple()
 
-	assert.NoError(t, GetAll(c))
+	assert.NoError(t, err)
 
 	stringResult := rec.Body.String()
 
@@ -160,25 +177,15 @@ func TestGetAllSingleEntry(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	payload := createPayload("john", 1234)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	_, err := postSimple(payload)
 
-	assert.NoError(t, Create(c))
+	assert.NoError(t, err)
 
-	req = httptest.NewRequest(http.MethodGet, "/api/simple", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	rec, err := getAllSimple()
 
-	assert.NoError(t, GetAll(c))
+	assert.NoError(t, err)
 
 	stringResult := rec.Body.String()
 
@@ -186,8 +193,8 @@ func TestGetAllSingleEntry(t *testing.T) {
 	assert.NoError(t, json.Unmarshal([]byte(stringResult), &simples))
 
 	assert.Len(t, simples, 1)
-	assert.Equal(t, testBody["name"], simples[0].Name)
-	assert.Equal(t, testBody["number"], simples[0].Number)
+	assert.Equal(t, payload["name"], simples[0].Name)
+	assert.Equal(t, payload["number"], simples[0].Number)
 }
 
 func TestGetAllThreeEntries(t *testing.T) {
@@ -195,42 +202,24 @@ func TestGetAllThreeEntries(t *testing.T) {
 	defer teardown()
 
 	type testBody map[string]interface{}
-	testBodySlice := []testBody{}
+	payloadSlice := []testBody{}
 
-	tB1 := testBody{
-		"name": "john",
-		"number": 1234,
-	}
-	tB2 := testBody{
-		"name": "jane",
-		"number": 1,
-	}
-	tB3 := testBody{
-		"name": "SAM_01234",
-		"number": -123,
-	}
+	payload1 := createPayload("john", 1234)
+	payload2 := createPayload("jane", 1)
+	payload3 := createPayload("SAM_01234", -123)
 
-	testBodySlice = append(testBodySlice, tB1)
-	testBodySlice = append(testBodySlice, tB2)
-	testBodySlice = append(testBodySlice, tB3)
+	payloadSlice = append(payloadSlice, payload1)
+	payloadSlice = append(payloadSlice, payload2)
+	payloadSlice = append(payloadSlice, payload3)
 
-	e := echo.New()
-	for _, testBody := range testBodySlice {
-		testBodyBytes, _ := json.Marshal(testBody)
-
-		req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
-		assert.NoError(t, Create(c))
+	for _, payload := range payloadSlice {
+		_, err := postSimple(payload)
+		assert.NoError(t, err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/simple", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	rec, err := getAllSimple()
 
-	assert.NoError(t, GetAll(c))
+	assert.NoError(t, err)
 
 	stringResult := rec.Body.String()
 
@@ -239,9 +228,9 @@ func TestGetAllThreeEntries(t *testing.T) {
 
 	assert.Len(t, simples, 3)
 	
-	for i, testBody := range testBodySlice {
-		assert.Equal(t, testBody["name"], simples[i].Name)
-		assert.Equal(t, testBody["number"], simples[i].Number)
+	for i, payload := range payloadSlice {
+		assert.Equal(t, payload["name"], simples[i].Name)
+		assert.Equal(t, payload["number"], simples[i].Number)
 	}
 }
 
@@ -249,28 +238,14 @@ func TestGetReturns200(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	payload := createPayload("john", 1234)
+	_, err := postSimple(payload)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	assert.NoError(t, err)
 
-	assert.NoError(t, Create(c))
+	rec, err := getSimple("1")
 
-	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	assert.NoError(t, Get(c))
+	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)	
 }
 
@@ -278,28 +253,14 @@ func TestInvalidGetReturns404(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	payload := createPayload("john", 1234)
+	_, err := postSimple(payload)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	assert.NoError(t, err)
 
-	assert.NoError(t, Create(c))
+	rec, err := getSimple("2")
 
-	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	
-	c.SetParamNames("id")
-	c.SetParamValues("2")
-
-	assert.NoError(t, Get(c))
+	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)	
 }
 
@@ -307,34 +268,87 @@ func TestGetByIDReturnsEntry(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	testBody := map[string]interface{}{
-		"name": "john",
-		"number": 1234,
-	} 
-	testBodyBytes, _ := json.Marshal(testBody)
+	payload := createPayload("john", 1234)
+	_, err := postSimple(payload)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/simple", bytes.NewBuffer(testBodyBytes))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	assert.NoError(t, err)
 
-	assert.NoError(t, Create(c))
+	rec, err := getSimple("1")
 
-	req = httptest.NewRequest(http.MethodGet, "/api/simple/1", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	assert.NoError(t, Get(c))
+	assert.NoError(t, err)
 
 	stringResult := rec.Body.String()
 
 	var simple models.Simple
 	assert.NoError(t, json.Unmarshal([]byte(stringResult), &simple))
 
-	assert.Equal(t, testBody["name"], simple.Name)
-	assert.Equal(t, testBody["number"], simple.Number)
+	assert.Equal(t, payload["name"], simple.Name)
+	assert.Equal(t, payload["number"], simple.Number)
 }
+
+func TestDeleteReturns200(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	payload := createPayload("john", 1234)
+	_, err := postSimple(payload)
+
+	assert.NoError(t, err)
+
+	rec, err := deleteSimple("1")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestInvalidDeleteReturns404(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	rec, err := deleteSimple("1")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestDeleteRemovesEntry(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	type testBody map[string]interface{}
+	payloadSlice := []testBody{}
+
+	payload1 := createPayload("john", 1234)
+	payload2 := createPayload("jane", 1)
+	payload3 := createPayload("SAM_01234", -123)
+
+	payloadSlice = append(payloadSlice, payload1)
+	payloadSlice = append(payloadSlice, payload2)
+	payloadSlice = append(payloadSlice, payload3)
+
+	for _, payload := range payloadSlice {
+		_, err := postSimple(payload)
+		assert.NoError(t, err)
+	}
+
+	_, err := deleteSimple("2")
+
+	assert.NoError(t, err)
+
+	rec, err := getSimple("1")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	rec, err = getSimple("2")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	rec, err = getSimple("3")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+
