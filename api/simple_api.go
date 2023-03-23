@@ -67,3 +67,7 @@ func Delete(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &simple)
 }
+
+func Update(c echo.Context) error {
+	return nil
+}

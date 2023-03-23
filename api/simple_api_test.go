@@ -80,6 +80,22 @@ func deleteSimple(id string) (*httptest.ResponseRecorder, error) {
 	return rec, err
 }
 
+func updateSimple(id string, payload map[string]interface{}) (*httptest.ResponseRecorder, error) {
+	payloadBytes, _ := json.Marshal(payload)	
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPatch, "/api/simple/" + id, bytes.NewBuffer(payloadBytes))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("id")
+	c.SetParamValues(id)
+
+	err := Update(c)
+
+	return rec, err
+}
+
 func TestCreateReturns(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
@@ -349,6 +365,108 @@ func TestDeleteRemovesEntry(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestUpdateReturns200(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	payload := createPayload("john", 1234)
+
+	_, err := postSimple(payload)
+
+	assert.NoError(t, err)
+
+	updatePayload := map[string]interface{}{
+		"name": "jane",
+	}
+
+	rec, err := updateSimple("1", updatePayload)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestInvalidUpdateReturns404(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	payload := createPayload("john", 1234)
+
+	_, err := postSimple(payload)
+
+	assert.NoError(t, err)
+
+	updatePayload := map[string]interface{}{
+		"name": "jane",
+	}
+
+	rec, err := updateSimple("2", updatePayload)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestUpdateUpdatesName(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	payload := createPayload("john", 1234)
+
+	_, err := postSimple(payload)
+
+	assert.NoError(t, err)
+
+	updatePayload := map[string]interface{}{
+		"name": "jane",
+	}
+
+	_, err = updateSimple("1", updatePayload)
+
+	assert.NoError(t, err)
+	
+	rec, err := getSimple("1")
+
+	assert.NoError(t, err)
+
+	stringResult := rec.Body.String()
+
+	var simple models.Simple
+	assert.NoError(t, json.Unmarshal([]byte(stringResult), &simple))
+
+	assert.Equal(t, updatePayload["name"], simple.Name)
+	assert.Equal(t, payload["number"], simple.Number)	
+}
+
+func TestUpdateUpdatesNumber(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	payload := createPayload("john", 1234)
+
+	_, err := postSimple(payload)
+
+	assert.NoError(t, err)
+
+	updatePayload := map[string]interface{}{
+		"number": 5678,
+	}
+
+	_, err = updateSimple("1", updatePayload)
+
+	assert.NoError(t, err)
+	
+	rec, err := getSimple("1")
+
+	assert.NoError(t, err)
+
+	stringResult := rec.Body.String()
+
+	var simple models.Simple
+	assert.NoError(t, json.Unmarshal([]byte(stringResult), &simple))
+
+	assert.Equal(t, payload["name"], simple.Name)
+	assert.Equal(t, updatePayload["number"], simple.Number)	
 }
 
 
