@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm/clause"
 )
 
 func Create(c echo.Context) error {
@@ -52,5 +53,17 @@ func Get(c echo.Context) error {
 }
 
 func Delete(c echo.Context) error {
-	return nil
+	var simple models.Simple
+
+	db := db.DbManager()
+
+	if err := db.Clauses(clause.Returning{}).Delete(&simple, c.Param("id")).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	if simple.ID == 0 {
+		return c.String(http.StatusBadRequest, "Invalid ID.")
+	}
+
+	return c.JSON(http.StatusOK, &simple)
 }
